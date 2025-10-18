@@ -1,0 +1,129 @@
+<robot name="my_laser" xmlns:xacro="http://wiki.ros.org/xacro">
+    <xacro:macro name="laser" params="parent">
+        <!-- 支撑结构参数 -->
+        <xacro:property name="support_length" value="0.15" />
+        <xacro:property name="support_radius" value="0.01" />
+        <xacro:property name="support_x" value="0.0" />
+        <xacro:property name="support_y" value="0.0" />
+        <xacro:property name="support_z" value="${base_link_length / 2 + support_length / 2}" />
+        <xacro:property name="support_m" value="0.02" />
+
+        <!-- 支撑结构link -->
+        <link name="support">
+            <visual>
+                <geometry>
+                    <cylinder radius="${support_radius}" length="${support_length}" />
+                </geometry>
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+                <material name="red">
+                    <color rgba="0.8 0.2 0.0 0.8" />
+                </material>
+            </visual>
+            <collision>
+                <geometry>
+                    <cylinder radius="${support_radius}" length="${support_length}" />
+                </geometry>
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            </collision>
+            <xacro:cylinder_inertial_matrix m="${support_m}" r="${support_radius}" h="${support_length}" />
+        </link>
+
+        <gazebo reference="support">
+            <material>Gazebo/White</material>
+        </gazebo>
+
+        <!-- 支撑结构与底盘连接关节 -->
+        <joint name="support_to_base_link" type="fixed">
+            <parent link="${parent}" />
+            <child link="support" />
+            <origin xyz="${support_x} ${support_y} ${support_z}" />
+        </joint>
+
+        <!-- 激光雷达本体参数 -->
+        <xacro:property name="laser_length" value="0.05" />
+        <xacro:property name="laser_radius" value="0.03" />
+        <xacro:property name="laser_x" value="0.0" />
+        <xacro:property name="laser_y" value="0.0" />
+        <xacro:property name="laser_z" value="${support_length / 2 + laser_length / 2}" />
+        <xacro:property name="laser_m" value="0.1" />
+
+        <!-- 激光雷达本体link -->
+        <link name="laser">
+            <visual>
+                <geometry>
+                    <cylinder radius="${laser_radius}" length="${laser_length}" />
+                </geometry>
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+                <material name="black" />
+            </visual>
+            <collision>
+                <geometry>
+                    <cylinder radius="${laser_radius}" length="${laser_length}" />
+                </geometry>
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            </collision>
+            <xacro:cylinder_inertial_matrix m="${laser_m}" r="${laser_radius}" h="${laser_length}" />
+        </link>
+
+        <gazebo reference="laser">
+            <material>Gazebo/Black</material>
+        </gazebo>
+
+        <!-- 激光雷达与支撑结构连接关节 -->
+        <joint name="laser_to_support" type="fixed">
+            <parent link="support" />
+            <child link="laser" />
+            <origin xyz="${laser_x} ${laser_y} ${laser_z}" />
+        </joint>
+
+        <!-- 核心：激光雷达传感器插件配置（发布激光点云数据） -->
+        <gazebo reference="laser">
+            <sensor type="ray" name="laser_sensor">
+                <!-- 雷达更新频率（10Hz，可根据性能调整） -->
+                <update_rate>10.0</update_rate>
+                
+                <!-- 雷达视场与范围配置 -->
+                <ray>
+                    <!-- 扫描类型：水平360度激光雷达 -->
+                    <scan>
+                        <!-- 水平扫描范围：-180°到180°（转换为弧度） -->
+                        <horizontal>
+                            <samples>360</samples>  <!-- 水平采样点数（360点=1°/点） -->
+                            <resolution>1.0</resolution>  <!-- 分辨率（1=无插值） -->
+                            <min_angle>-3.1415926535</min_angle>  <!-- -π 弧度（-180°） -->
+                            <max_angle>3.1415926535</max_angle>   <!-- π 弧度（180°） -->
+                        </horizontal>
+                    </scan>
+                    
+                    <!-- 雷达探测范围（0.1米到10米，可根据需求调整） -->
+                    <range>
+                        <min>0.1</min>
+                        <max>10.0</max>
+                        <resolution>0.01</resolution>  <!-- 距离分辨率（0.01米） -->
+                    </range>
+                    
+                    <!-- 启用雷达可视化（在Gazebo中显示激光束） -->
+                    <visualize>true</visualize>
+                </ray>
+                
+                <!-- ROS插件：将激光数据转换为ROS话题发布 -->
+                <plugin name="gazebo_ros_laser_controller" filename="libgazebo_ros_laser.so">
+                    <robotNamespace>/</robotNamespace>
+                    <!-- 激光数据发布话题（标准激光话题名） -->
+                    <topicName>/scan</topicName>
+                    <!-- 激光雷达坐标系（与link名称一致） -->
+                    <frameName>laser</frameName>
+                </plugin>
+            </sensor>
+        </gazebo>
+    </xacro:macro>
+    <!-- 补充：圆柱体惯性矩阵宏定义（若底盘xacro中未定义，需保留） -->
+    <xacro:macro name="cylinder_inertial_matrix" params="m r h">
+        <inertial>
+            <mass value="${m}" />
+            <inertia ixx="${m*(3*r*r + h*h)/12}" ixy="0" ixz="0"
+                     iyy="${m*(3*r*r + h*h)/12}" iyz="0"
+                     izz="${m*r*r/2}" />
+        </inertial>
+    </xacro:macro>
+</robot>

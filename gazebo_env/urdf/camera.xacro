@@ -1,0 +1,84 @@
+<robot name="my_camera" xmlns:xacro="http://wiki.ros.org/xacro">
+    <!-- 关键新增：定义宏，名称为"my_camera"，与主文件调用一致 -->
+    <xacro:macro name="camera" params="parent">
+        <!-- 1. 摄像头尺寸与安装参数（复用原参数，确保与底盘base_link适配） -->
+        <xacro:property name="camera_length" value="0.01" />   <!-- 摄像头前后深度 -->
+        <xacro:property name="camera_width" value="0.025" />   <!-- 摄像头左右宽度 -->
+        <xacro:property name="camera_height" value="0.025" />  <!-- 摄像头上下高度 -->
+        <xacro:property name="camera_x" value="0.08" />        <!-- 相对base_link的x轴偏移（向前） -->
+        <xacro:property name="camera_y" value="0.0" />         <!-- 相对base_link的y轴偏移（居中） -->
+        <xacro:property name="camera_z" value="${base_link_length / 2 + camera_height / 2}" />  <!-- 相对base_link的z轴偏移（顶部对齐） -->
+        <xacro:property name="camera_m" value="0.01" />        <!-- 摄像头质量 -->
+
+        <!-- 2. 摄像头link（视觉、碰撞、惯性） -->
+        <link name="camera">
+            <!-- 视觉模型 -->
+            <visual>
+                <geometry>
+                    <box size="${camera_length} ${camera_width} ${camera_height}" />
+                </geometry>
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+                <material name="black">
+                    <color rgba="0.0 0.0 0.0 1.0" />
+                </material>
+            </visual>
+            <!-- 碰撞模型 -->
+            <collision>
+                <geometry>
+                    <box size="${camera_length} ${camera_width} ${camera_height}" />
+                </geometry>
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            </collision>
+            <!-- 惯性矩阵 -->
+            <xacro:Box_inertial_matrix m="${camera_m}" l="${camera_length}" w="${camera_width}" h="${camera_height}" />
+        </link>
+
+        <!-- 3. Gazebo中摄像头的外观材质 -->
+        <gazebo reference="camera">
+            <material>Gazebo/Blue</material>
+        </gazebo>
+
+        <!-- 4. 摄像头与底盘的固定连接关节 -->
+        <joint name="camera_to_base_link" type="fixed">
+            <parent link="${parent}" />  <!-- 使用宏参数"parent"，主文件传入"base_link" -->
+            <child link="camera" />      <!-- 子关节为摄像头的camera link -->
+            <origin xyz="${camera_x} ${camera_y} ${camera_z}" rpy="0 -0.174 0" />  <!-- 调整rpy让镜头朝前，解决之前图像黑屏问题 -->
+        </joint>
+
+        <!-- 5. 核心：Gazebo摄像头传感器插件（实现图像采集与话题发布） -->
+        <gazebo reference="camera">
+            <sensor name="camera_sensor" type="camera">
+                <update_rate>10.0</update_rate>
+                <camera name="camera">
+                    <image>
+                        <width>1280</width>
+                        <height>1024</height>
+                        <format>R8G8B8</format>
+                    </image>
+                    <horizontal_fov>1.57</horizontal_fov> <!-- 60度（π/3弧度） -->
+                    <near>0.01</near>
+                    <far>100.0</far>
+                    <frame_name>camera</frame_name>
+                </camera>
+                <plugin name="gazebo_ros_camera" filename="libgazebo_ros_camera.so">
+                    <robotNamespace>/</robotNamespace>
+                    <cameraName>camera</cameraName>
+                    <image_topic>/camera/image_raw</image_topic>
+                    <camera_info_topic>/camera/camera_info</camera_info_topic>
+                    <frame_name>camera</frame_name>
+                    <publish_compressed_image>false</publish_compressed_image>
+                </plugin>
+            </sensor>
+        </gazebo>
+    </xacro:macro>
+
+    <!-- 6. Box惯性矩阵宏（封装在摄像头宏外，确保可被调用） -->
+    <xacro:macro name="Box_inertial_matrix" params="m l w h">
+        <inertial>
+            <mass value="${m}" />
+            <inertia ixx="${m*(w*w + h*h)/12}" ixy="0" ixz="0"
+                     iyy="${m*(l*l + h*h)/12}" iyz="0"
+                     izz="${m*(l*l + w*w)/12}" />
+        </inertial>
+    </xacro:macro>
+</robot>
