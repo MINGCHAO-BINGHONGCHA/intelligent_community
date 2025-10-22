@@ -32,14 +32,18 @@ rosrun rosrun nanodet_ros ros_nanodet.py
 roslaunch hyperlpr bringup.launch
 ```
 
+启动导航
+```shell
+roslaunch waypoint_nav waypoint_nav.launch
+```
+
 ## 关于Nanodet模型训练以及转换
 
 关于自定义模型可以参考我的[博客](https://www.ming-ice-tea.top/2025/10/19/Nanodet%E6%A8%A1%E5%9E%8B%E7%9A%84%E8%AE%AD%E7%BB%83%E4%BB%A5%E5%8F%8A%E7%A7%BB%E6%A4%8D%E5%88%B0ROS%E4%B8%AD/)
-
-
-
 
 ## Reference
 https://github.com/stunback/ros-nanodet
 
 https://github.com/elben6exam/HyperLPR
+
+https://github.com/pandalandala/ROS-Localization-and-Navigation
