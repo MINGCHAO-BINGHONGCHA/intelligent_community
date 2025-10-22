@@ -21,12 +21,13 @@
     </include>
 
     <param name="robot_description" command="$(find xacro)/xacro $(find gazebo_env)/urdf/car.xacro" />
+        <!-- 运行robot_state_publisher节点，发布tf  -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"  output="screen" >
+        <param name="publish_frequency" type="double" value="20.0" />
+    </node>
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node> 
 
-    <!-- 运行robot_state_publisher节点，发布tf  -->
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"  output="screen" >
-        <param name="publish_frequency" type="double" value="50.0" />
-    </node>
+
     <!-- 在 gazebo 中显示机器人模型 -->
     <node pkg="gazebo_ros" type="spawn_model" name="model" args="-urdf -model mycar -param robot_description -x 1.75 -y 1.75 -z 0.0 -R 0.0 -P 0.0 -Y 3.14159"  />
 </launch>

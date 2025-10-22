@@ -1,0 +1,8 @@
+<launch>
+  <!-- 你的waypoints文件路径 -->
+  <arg name="waypoint_file" default="$(find waypoint_nav)/config/waypoints.yaml" />
+
+  <node pkg="waypoint_nav" type="waypoint_follower.py" name="waypoint_follower" output="screen">
+    <param name="waypoint_file" value="$(arg waypoint_file)" />
+  </node>
+</launch>

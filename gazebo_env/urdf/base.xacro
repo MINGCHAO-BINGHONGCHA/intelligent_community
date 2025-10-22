@@ -139,6 +139,7 @@
         <robotBaseFrame>base_footprint</robotBaseFrame>
         
         <!-- 发布配置 -->
+        <publishTf>1</publishTf> 
         <publishWheelTF>false</publishWheelTF>
         <publishOdomTF>true</publishOdomTF>
         <publishWheelJointState>true</publishWheelJointState>
@@ -153,7 +154,7 @@
         <updateRate>50.0</updateRate>
         
         <!-- 里程计来源（1=编码器，0=世界坐标） -->
-        <odometrySource>1</odometrySource>
+        <odometrySource>encoders</odometrySource>
         
         <!-- 轮关节名称（必须与模型中的关节名一致） -->
         <leftJoint>left_wheel_to_base_link</leftJoint>
