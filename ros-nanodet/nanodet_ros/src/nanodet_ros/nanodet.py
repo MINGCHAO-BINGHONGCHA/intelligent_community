@@ -66,26 +66,49 @@ class my_nanodet():
             img = cv2.resize(srcimg, self.input_shape, interpolation=cv2.INTER_AREA)
         return img, newh, neww, top, left
 
-    def detect(self, srcimg):
+    def detect(self, srcimg, return_results=False):
         img, newh, neww, top, left = self.resize_image(srcimg)
         img = self._normalize(img)
         blob = cv2.dnn.blobFromImage(img)
-        # Sets the input to the network
         self.net.setInput(blob)
 
-        # Runs the forward pass to get output of the output layers
+        # 前向推理
         outs = self.net.forward(self.net.getUnconnectedOutLayersNames())
         det_bboxes, det_conf, det_classid = self.post_process(outs)
 
         drawimg = srcimg.copy()
         ratioh, ratiow = srcimg.shape[0] / newh, srcimg.shape[1] / neww
+
+        # 用于保存检测结果
+        results = []
+
         for i in range(det_bboxes.shape[0]):
             xmin = max(int((det_bboxes[i, 0] - left) * ratiow), 0)
             ymin = max(int((det_bboxes[i, 1] - top) * ratioh), 0)
             xmax = min(int((det_bboxes[i, 2] - left) * ratiow), srcimg.shape[1])
             ymax = min(int((det_bboxes[i, 3] - top) * ratioh), srcimg.shape[0])
+
+            # 绘制检测框
             self.drawPred(drawimg, int(det_classid[i]), float(det_conf[i]), xmin, ymin, xmax, ymax)
-        return drawimg
+
+            # === 新增：保存检测结果信息 ===
+            if hasattr(self, 'classes') and len(self.classes) > int(det_classid[i]):
+                label_name = self.classes[int(det_classid[i])]
+            else:
+                label_name = str(det_classid[i])
+
+            results.append({
+                'label': label_name,
+                'score': float(det_conf[i]),
+                'bbox': [xmin, ymin, xmax, ymax]
+            })
+
+        # === 新增：可选返回结果 ===
+        if return_results:
+            return drawimg, results
+        else:
+            return drawimg
+
 
     def post_process(self, preds):
         cls_scores, bbox_preds = preds[::2], preds[1::2]
@@ -135,7 +158,7 @@ class my_nanodet():
 
         # 统一处理 indices 使之成为 1D 的 numpy int array
         if indices is None or len(indices) == 0:
-            print('nothing detect')
+            #print('nothing detect')
             return np.array([]), np.array([]), np.array([])
 
         inds = np.array(indices)

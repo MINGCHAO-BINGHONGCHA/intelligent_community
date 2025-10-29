@@ -1,0 +1,41 @@
+<launch>
+  <!-- 设置gmapping节点的参数 -->
+  <arg name="scan_topic" default="/scan" />  <!-- 激光雷达话题 -->
+  <arg name="base_frame" default="base_link" />  <!-- 机器人基坐标系 -->
+  <arg name="odom_frame" default="odom" />      <!-- 里程计坐标系 -->
+  <arg name="map_frame" default="map" />        <!-- 地图坐标系 -->
+
+  <!-- 启动gmapping节点 -->
+  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+    <!-- 激光雷达相关参数 -->
+    <param name="scan" value="$(arg scan_topic)" />
+    <param name="maxRange" value="10.0" />       <!-- 激光最大有效距离 -->
+    <param name="maxUrange" value="8.0" />       <!-- 用于建图的最大距离 -->
+    <param name="minRange" value="0.1" />        <!-- 激光最小有效距离 -->
+
+    <!-- 坐标系参数 -->
+    <param name="base_frame" value="$(arg base_frame)" />
+    <param name="odom_frame" value="$(arg odom_frame)" />
+    <param name="map_frame" value="$(arg map_frame)" />
+
+    <!-- 运动模型参数 -->
+    <param name="sigma" value="0.05" />          <!-- 高斯噪声标准差 -->
+    <param name="kernelSize" value="1" />        <!-- 核大小 -->
+    <param name="lstep" value="0.05" />          <!-- 平移步长 -->
+    <param name="astep" value="0.05" />          <!-- 旋转步长 -->
+    <param name="iterations" value="5" />        <!-- 迭代次数 -->
+    <param name="lsigma" value="0.075" />        <!-- 平移噪声 -->
+    <param name="asigma" value="0.05" />         <!-- 旋转噪声 -->
+    <param name="srr" value="0.1" />             <!-- 旋转到旋转的噪声系数 -->
+    <param name="srt" value="0.2" />             <!-- 旋转到平移的噪声系数 -->
+    <param name="str" value="0.1" />             <!-- 平移到旋转的噪声系数 -->
+    <param name="stt" value="0.2" />             <!-- 平移到平移的噪声系数 -->
+  </node>
+
+  <!-- 启动rviz可视化 -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find gmapping)/rviz/gmapping.rviz" />
+
+  <!-- （可选）启动机器人控制节点，根据实际机器人修改 -->
+  <!-- <node pkg="your_robot_package" type="teleop_node" name="teleop_control" output="screen" /> -->
+
+</launch>

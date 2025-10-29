@@ -7,6 +7,7 @@ import math
 import tf
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Bool   # ✅ 新增：布尔消息类型
 
 class WaypointFollower:
     def __init__(self, yaml_file):
@@ -20,11 +21,16 @@ class WaypointFollower:
         self.cmd_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
 
+        # ✅ 新增：发布flag话题
+        self.flag_pub = rospy.Publisher('/stop_flag', Bool, queue_size=10)
+
         self.rate = rospy.Rate(10)  # 10Hz
         self.linear_speed = 0.2     # m/s
         self.angular_speed = 0.4    # rad/s
         self.dist_tolerance = 0.05
         self.yaw_tolerance = 0.05
+        self.stop_waypoints = {3, 4, 8}  # 需要停留的航点编号
+        self.stop_duration = 5.0    # 停留时间（秒）
 
     def odom_callback(self, msg):
         """保存当前位置和朝向"""
@@ -72,7 +78,6 @@ class WaypointFollower:
 
             twist = Twist()
 
-            # 先对准方向
             if abs(yaw_error) > 0.2:
                 twist.angular.z = 0.5 * yaw_error
             else:
@@ -99,11 +104,26 @@ class WaypointFollower:
         rospy.loginfo("开始执行航点跟随")
 
         for i, wp in enumerate(self.waypoints):
-            rospy.loginfo("➡️ 前往第 %d 个点: (%.2f, %.2f, %.2f)" % (i+1, wp['x'], wp['y'], wp['yaw']))
+            wp_num = i + 1
+            rospy.loginfo("➡️ 前往第 %d 个点: (%.2f, %.2f, %.2f)" %
+                          (wp_num, wp['x'], wp['y'], wp['yaw']))
             self.move_to_point(wp['x'], wp['y'])
             self.rotate_to_yaw(wp['yaw'])
-            rospy.loginfo("✅ 到达第 %d 个点" % (i+1))
-            rospy.sleep(1.0)
+            rospy.loginfo("✅ 到达第 %d 个点" % wp_num)
+
+            # ✅ 发布flag消息
+            is_stop = wp_num in self.stop_waypoints
+            self.flag_pub.publish(Bool(data=is_stop))
+            #rospy.loginfo("📡 stop_flag = %s" % str(is_stop))
+
+            # 停留逻辑
+            if is_stop:
+                rospy.loginfo("⏸️ 在第 %d 个点停留 %.1f 秒" %
+                              (wp_num, self.stop_duration))
+                rospy.sleep(self.stop_duration)
+                self.flag_pub.publish(Bool(data=False))
+            else:
+                rospy.sleep(1.0)
 
         rospy.loginfo("🎯 所有航点完成！")
         self.stop()
