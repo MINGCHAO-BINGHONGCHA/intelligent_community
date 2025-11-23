@@ -24,7 +24,7 @@ roslaunch mycar base_test.launch
 
 启动nanodet识别
 ```shell
-rosrun rosrun nanodet_ros ros_nanodet.py
+rosrun nanodet_ros ros_nanodet.py
 ```
 
 启动车牌号识别
